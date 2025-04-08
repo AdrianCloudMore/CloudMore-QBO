@@ -1,0 +1,2 @@
+class CLoudMoreException(Exception):
+    pass

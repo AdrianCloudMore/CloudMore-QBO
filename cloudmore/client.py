@@ -4,16 +4,17 @@ import requests
 import datetime
 from datetime import timedelta
 
-class CloudmoreClient:
+class CloudmoreClient():
 
     client: swagger_client.ApiClient
     authConfig: AuthConfig
     host: str = "https://api-dev.cloudmore.com"
-    config: swagger_client.Configuration()
+    config: object
 
     def __init__(self,**kwargs):
         self.authConfig = kwargs.get("authConfig")
         self.host = kwargs.get("host")
+        self.config = swagger_client.Configuration()
         self.config.host = self.host
         self.client = swagger_client.ApiClient(configuration=self.config)
 
@@ -35,7 +36,19 @@ class CloudmoreClient:
             data = response.json()
             self.client.configuration.access_token = data["access_token"]
             self.client.set_default_header("Authorization", "%s %s" % ("Bearer", data["access_token"]))
-            self.client.configuration.token_expiry = datetime.now() + timedelta(seconds=data["expires_in"])
+            self.client.configuration.token_expiry = datetime.datetime.now() + timedelta(seconds=data["expires_in"])
         else:
             print(response)
             raise Exception("Failed to authenticate with CloudMore API")
+
+    def GetAllSellerServices(self,sellerId):
+        api_instance = swagger_client.SellerServicesApi(api_client=self.client)
+        data = api_instance.api_sellers_by_seller_id_services_get(sellerId)
+        print(data)
+        return data
+
+    def GetAllSellerServiceProducts(self,sellerId, serviceId):
+        api_instance = swagger_client.SellerServiceProductsApi(api_client=self.client)
+        data = api_instance.api_sellers_by_seller_id_services_by_service_id_products_get(sellerId, serviceId)
+        print(data)
+        return data

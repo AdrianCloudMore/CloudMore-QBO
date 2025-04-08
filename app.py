@@ -1,12 +1,26 @@
+from configparser import ConfigParser
+
+import swagger_client
 from intuitlib.client import AuthClient
 from quickbooks import QuickBooks
-from quickbooks.objects.customer import Customer
 import configparser
+import fastapi
+import psycopg2
+import json
+from fastapi import HTTPException
+from fastapi import FastAPI, Request
+from cloudmore.client import CloudmoreClient as CloudmoreClient
+from contextlib import asynccontextmanager
 
-def main():
+import cloudmore.auth_config
+from exceptions.CloudMoreException import CLoudMoreException
 
-    config = configparser.ConfigParser()
-    config.read('settings.ini')
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    print("Starting ... ")
 
     auth_client = AuthClient(
         client_id = config["authentication.quickbooks"]["CLIENT_ID"],
@@ -22,10 +36,54 @@ def main():
         company_id=config["authentication.quickbooks"]["COMPANY_ID"]
     )
 
-    customers = Customer.all(qb=client)
+    print("Loaded QuickBooks Client")
 
-    for customer in customers:
-        print(customer.DisplayName)
+
+
+    yield
+
+
+config = configparser.ConfigParser()
+config.read('settings.ini')
+
+
+
+auth_client = AuthClient
+client = QuickBooks
+
+app = FastAPI(lifespan=lifespan)
+
+auth_config = cloudmore.auth_config.AuthConfig(username=config["authentication.cloudmore"]["USERNAME"],
+                                                    password=config["authentication.cloudmore"]["PASSWORD"],
+                                                   client_secret=config["authentication.cloudmore"]["CLIENT_SECRET"])
+
+
+cm = CloudmoreClient(authConfig=auth_config, host="https://api-dev.cloudmore.com")
+
+
+@app.get("/seller/services")
+async def get_all_seller_services():
+    try:
+        cm.authenticate()
+        print("Get All Seller Service for seller: %s" % config["seller.cloudmore"]["SELLER_ID"])
+        data = cm.GetAllSellerServices(sellerId=config["seller.cloudmore"]["SELLER_ID"])
+        return data
+    except CLoudMoreException as error:
+        details = json.loads(error.args[0])
+        raise HTTPException(400,detail={"type": details["type"], "msg": details["details"]})
+
+
+
+
+def main():
+
+    cm.authenticate()
+
+    data = cm.GetAllSellerServices(config["seller.cloudmore"]["SELLER_ID"])
+
+    for d in data:
+        print(d)
+
 
 if __name__ == '__main__':
     main()
