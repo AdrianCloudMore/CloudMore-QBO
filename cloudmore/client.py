@@ -1,12 +1,17 @@
+import json
+
+from cloudmore_sdk import ServiceCategoriesApi, ServiceCategoryViewModel
+
 from cloudmore.auth_config import AuthConfig
-import swagger_client
+import cloudmore_sdk
 import requests
 import datetime
 from datetime import timedelta
+from typing import List
 
 class CloudmoreClient():
 
-    client: swagger_client.ApiClient
+    client: cloudmore_sdk.ApiClient
     authConfig: AuthConfig
     host: str = "https://api-dev.cloudmore.com"
     config: object
@@ -14,9 +19,9 @@ class CloudmoreClient():
     def __init__(self,**kwargs):
         self.authConfig = kwargs.get("authConfig")
         self.host = kwargs.get("host")
-        self.config = swagger_client.Configuration()
+        self.config = cloudmore_sdk.Configuration()
         self.config.host = self.host
-        self.client = swagger_client.ApiClient(configuration=self.config)
+        self.client = cloudmore_sdk.ApiClient(configuration=self.config)
 
     def authenticate(self):
         """Retrieve and store access token for Cloudmore API"""
@@ -41,14 +46,35 @@ class CloudmoreClient():
             print(response)
             raise Exception("Failed to authenticate with CloudMore API")
 
-    def GetAllSellerServices(self,sellerId):
-        api_instance = swagger_client.SellerServicesApi(api_client=self.client)
+    def GetSellerServiceByServiceId(self,sellerId,serviceId):
+        api_instance = cloudmore_sdk.SellerServicesApi(api_client=self.client)
+        data = api_instance.api_sellers_by_seller_id_services_by_id_get(sellerId,serviceId)
+        return data
+
+    def GetSellerServiceByServiceId(self,sellerId,serviceId):
+        api_instance = cloudmore_sdk.SellerServicesApi(api_client=self.client)
+        data = api_instance.api_sellers_by_seller_id_services_by_id_get(sellerId,serviceId)
+        return data
+
+    def GetAllSellerServices(self,sellerId) -> {}:
+        api_instance = cloudmore_sdk.SellerServicesApi(api_client=self.client)
         data = api_instance.api_sellers_by_seller_id_services_get(sellerId)
         print(data)
         return data
 
     def GetAllSellerServiceProducts(self,sellerId, serviceId):
-        api_instance = swagger_client.SellerServiceProductsApi(api_client=self.client)
+        api_instance = cloudmore_sdk.SellerServiceProductsApi(api_client=self.client)
         data = api_instance.api_sellers_by_seller_id_services_by_service_id_products_get(sellerId, serviceId)
         print(data)
+        return data
+
+    def GetBrokerById(self,sellerId, brokerId):
+        api_instance = cloudmore_sdk.ResellersApi(api_client=self.client)
+        data = api_instance.api_sellers_by_seller_id_resellers_by_id_get(sellerId, brokerId)
+        print(data)
+        return data
+
+    def GetServiceCategories(self):
+        api_instance = cloudmore_sdk.ServiceCategoriesApi(api_client=self.client)
+        data = api_instance.api_services_categories_get()
         return data

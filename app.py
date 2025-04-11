@@ -1,6 +1,7 @@
+import array
 from configparser import ConfigParser
 
-import swagger_client
+import cloudmore_sdk
 from intuitlib.client import AuthClient
 from quickbooks import QuickBooks
 import configparser
@@ -11,11 +12,9 @@ from fastapi import HTTPException
 from fastapi import FastAPI, Request
 from cloudmore.client import CloudmoreClient as CloudmoreClient
 from contextlib import asynccontextmanager
-
+from typing import List
 import cloudmore.auth_config
 from exceptions.CloudMoreException import CLoudMoreException
-
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,7 +46,6 @@ config = configparser.ConfigParser()
 config.read('settings.ini')
 
 
-
 auth_client = AuthClient
 client = QuickBooks
 
@@ -57,7 +55,6 @@ auth_config = cloudmore.auth_config.AuthConfig(username=config["authentication.c
                                                     password=config["authentication.cloudmore"]["PASSWORD"],
                                                    client_secret=config["authentication.cloudmore"]["CLIENT_SECRET"])
 
-
 cm = CloudmoreClient(authConfig=auth_config, host="https://api-dev.cloudmore.com")
 
 
@@ -65,9 +62,9 @@ cm = CloudmoreClient(authConfig=auth_config, host="https://api-dev.cloudmore.com
 async def get_all_seller_services():
     try:
         cm.authenticate()
-        print("Get All Seller Service for seller: %s" % config["seller.cloudmore"]["SELLER_ID"])
-        data = cm.GetAllSellerServices(sellerId=config["seller.cloudmore"]["SELLER_ID"])
-        return data
+        data = cm.GetServiceCategories()
+        d = { "data" : data.__str__()}
+        return d
     except CLoudMoreException as error:
         details = json.loads(error.args[0])
         raise HTTPException(400,detail={"type": details["type"], "msg": details["details"]})
